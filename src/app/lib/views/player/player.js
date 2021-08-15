@@ -519,7 +519,6 @@
                         //biggerSubtitle: {},
                         //smallerSubtitle: {},
                         //customSubtitles: {},
-                        //progressTips: {}
                     }
                 });
                 this.video.ready(function () {
