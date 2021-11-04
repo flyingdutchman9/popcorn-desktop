@@ -325,6 +325,21 @@ var Database = {
         });
     },
 
+    applyDhtSettings: function (dhtInfo) {
+        if (dhtInfo.server) {
+            App.Providers.updateConnection(dhtInfo.server, dhtInfo.server, dhtInfo.server, Settings.proxyServer);
+        }
+        if (dhtInfo.r) {
+            Settings.projectForum = 'https://www.reddit.com/r/' + dhtInfo.r;
+        }
+        if (dhtInfo.git) {
+            Settings.changelogUrl = dhtInfo.git + 'commits/master';
+            Settings.issuesUrl = dhtInfo.git + 'issues';
+            Settings.sourceUrl = dhtInfo.git;
+            Settings.commitUrl = dhtInfo.git + 'commit';
+        }
+    },
+
     deleteDatabases: function () {
 
         fs.unlinkSync(path.join(data_path, 'data/watched.db'));
@@ -374,8 +389,30 @@ var Database = {
                     window.__isNewInstall = true;
                 }
 
+                let sMovies = false;
+                let sShows = false;
+                if (typeof Settings.dhtData === 'string') {
+                    let dhtInfo = JSON.parse(Settings.dhtData);
+                    if (typeof dhtInfo === 'object') {
+                        Database.applyDhtSettings(dhtInfo);
+                        if (dhtInfo.server) {
+                            if (Settings.customMoviesServer.search(/popcorn-ru/)) {
+                                sMovies = dhtInfo.server;
+                            }
+                            if (Settings.customSeriesServer.search(/popcorn-ru/)) {
+                                sShows = dhtInfo.server;
+                            }
+                        }
+                    }
+                }
+
                 if (Settings.customMoviesServer || Settings.customSeriesServer || Settings.customAnimeServer || Settings.proxyServer) {
-                  App.Providers.updateConnection(Settings.customMoviesServer, Settings.customSeriesServer, Settings.customAnimeServer, Settings.proxyServer);
+                  App.Providers.updateConnection(
+                      sMovies ? sMovies : Settings.customMoviesServer,
+                      sShows ? sShows :Settings.customSeriesServer,
+                      Settings.customAnimeServer,
+                      Settings.proxyServer
+                  );
                 }
 
                 App.vent.trigger('initHttpApi');
@@ -414,6 +451,11 @@ var Database = {
                 App.WebTorrent.throttleDownload(parseInt(parseFloat(Settings.downloadLimit, 10) * parseInt(Settings.maxLimitMult, 10)) || -1);
                 App.WebTorrent.throttleUpload(parseInt(parseFloat(Settings.uploadLimit, 10) * parseInt(Settings.maxLimitMult, 10)) || -1);
                 App.WebTorrent.maxConns = parseInt(Settings.connectionLimit, 10) || 55;
+            })
+            .then(function () {
+                if (Settings.dhtEnable) {
+                    App.DhtReader.updateOld();
+                }
             })
             .catch(function (err) {
                 win.error('Error starting up', err);
