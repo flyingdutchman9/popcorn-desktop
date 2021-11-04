@@ -389,15 +389,30 @@ var Database = {
                     window.__isNewInstall = true;
                 }
 
+                let sMovies = false;
+                let sShows = false;
                 if (typeof Settings.dhtData === 'string') {
                     let dhtInfo = JSON.parse(Settings.dhtData);
                     if (typeof dhtInfo === 'object') {
                         Database.applyDhtSettings(dhtInfo);
+                        if (dhtInfo.server) {
+                            if (Settings.customMoviesServer.search(/popcorn-ru/)) {
+                                sMovies = dhtInfo.server;
+                            }
+                            if (Settings.customSeriesServer.search(/popcorn-ru/)) {
+                                sShows = dhtInfo.server;
+                            }
+                        }
                     }
                 }
 
                 if (Settings.customMoviesServer || Settings.customSeriesServer || Settings.customAnimeServer || Settings.proxyServer) {
-                  App.Providers.updateConnection(Settings.customMoviesServer, Settings.customSeriesServer, Settings.customAnimeServer, Settings.proxyServer);
+                  App.Providers.updateConnection(
+                      sMovies ? sMovies : Settings.customMoviesServer,
+                      sShows ? sShows :Settings.customSeriesServer,
+                      Settings.customAnimeServer,
+                      Settings.proxyServer
+                  );
                 }
 
                 App.vent.trigger('initHttpApi');
