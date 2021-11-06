@@ -735,7 +735,6 @@
                     let showProvider = App.Config.getProviderForType('tvshow')[0];
                     for (let n in data) {
                         let item = data[n];
-                        console.log(item);
                         if (item.type === 'movie') {
                             await movieProvider.fetch({keywords: item.imdb_id, page:1}).then(function (movies) {
                                 if (movies.results.length !== 1) {
@@ -743,7 +742,8 @@
                                 }
                                 let movie = movies.results[0];
                                 Database.deleteMovie(item.imdb_id);
-                                movie.providers = [movieProvider.name];
+                                movie.providers = {};
+                                movie.providers.torrent = movieProvider;
                                 Database.addMovie(movie);
                             });
                         }
@@ -752,7 +752,8 @@
                                 contextLocale: App.settings.contextLanguage || App.settings.language
                             }).then(function (show) {
                                     Database.deleteTVShow(item.imdb_id);
-                                    show.providers = [showProvider.name];
+                                    show.providers = {};
+                                    show.providers.torrent = showProvider;
                                     Database.addTVShow(show);
                                 });
                         }
