@@ -396,10 +396,10 @@ var Database = {
                     if (typeof dhtInfo === 'object') {
                         Database.applyDhtSettings(dhtInfo);
                         if (dhtInfo.server) {
-                            if (Settings.customMoviesServer.search(/popcorn-ru/)) {
+                            if (Settings.customMoviesServer.search(/popcorn-ru/) !== -1) {
                                 sMovies = dhtInfo.server;
                             }
-                            if (Settings.customSeriesServer.search(/popcorn-ru/)) {
+                            if (Settings.customSeriesServer.search(/popcorn-ru/) !== -1) {
                                 sShows = dhtInfo.server;
                             }
                         }
