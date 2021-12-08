@@ -30,9 +30,9 @@
 		events: {
 			'mousedown .magnet-icon': 'openMagnet',
 			'mousedown .health-icon': 'healthClicked',
-			'mousedown .pause-torrent': 'onPauseTorrentClicked',
-			'mousedown .resume-torrent': 'onResumeTorrentClicked',
-			'mousedown .trash-torrent': 'onRemoveTorrentClicked',
+			'click .pause-torrent': 'onPauseTorrentClicked',
+			'click .resume-torrent': 'onResumeTorrentClicked',
+			'click .trash-torrent': 'onRemoveTorrentClicked',
 			'click .tab-torrent': 'clickTorrent',
 			'dblclick .file-item': 'openItem',
 			'click .item-play': 'addItem',
@@ -62,7 +62,7 @@
 			if ($('.loading .maximize-icon').is(':visible') || $('.player .maximize-icon').is(':visible')) {
 				let currentHash;
 				try { currentHash = App.LoadingView.model.attributes.streamInfo.attributes.torrentModel.attributes.torrent.infoHash; } catch(err) {}
-				currentHash && $('#trash-'+currentHash)[0] ? $('#trash-'+currentHash).addClass('disabled') : null;
+				currentHash && $('#trash-'+currentHash)[0] ? $('#trash-'+currentHash).addClass('disabled').prop('disabled', true) : null;
 			}
 		},
 
@@ -197,6 +197,7 @@
 		},
 
 		onPauseTorrentClicked(e, id) {
+			try { e.stopPropagation(); } catch(err) {}
 			const torrent = this.getTorrentFromEvent(e, id);
 			if (torrent) {
 				this.pauseTorrent(torrent);
@@ -204,6 +205,7 @@
 		},
 
 		onResumeTorrentClicked(e, id) {
+			try { e.stopPropagation(); } catch(err) {}
 			const torrent = this.getTorrentFromEvent(e, id);
 			if (torrent) {
 				torrent.resume();
@@ -220,6 +222,7 @@
 		},
 
 		onRemoveTorrentClicked(e) {
+			try { e.stopPropagation(); } catch(err) {}
 			const torrent = this.getTorrentFromEvent(e);
 			if (torrent) {
 				if (App.settings.delSeedboxCache === 'always') {
@@ -299,8 +302,7 @@
 			const hash = $('.tab-torrent.active')[0].getAttribute('id');
 			const torrent = App.WebTorrent.torrents.find(torrent => torrent.infoHash === hash);
 			const filename = e.target.firstChild.innerHTML || e.target.innerHTML;
-			const filepath = torrent.files.filter(obj => { return obj.name === filename; })[0].path.replace(/[^\\/]*$/, '');
-			const location = App.settings.separateDownloadsDir && !torrent._servers[0] ? path.join(Settings.downloadsLocation, filepath) : path.join(Settings.tmpLocation, filepath);
+			const location = torrent.files.filter(obj => { return obj.name === filename; })[0].path.replace(/[^\\/]*$/, '');
 			App.settings.os === 'windows' ? nw.Shell.openExternal(location) : nw.Shell.openItem(location);
 		},
 
@@ -324,7 +326,7 @@
 			setTimeout(() => {
 				this.updateView($('.tab-torrent.active'), true);
 				if (target.hasClass('item-play')) {
-					$('#trash-'+hash).addClass('disabled');
+					$('#trash-'+hash).addClass('disabled').prop('disabled', true);
 					$('.seedbox .item-play').addClass('disabled').prop('disabled', true);
 				}
 			}, 100);
@@ -339,6 +341,7 @@
 			const file = thisTorrent.files.filter(obj => { return obj.name === filename; })[0];
 			if (!file._fileStreams.size) {
 				file.deselect(0);
+				file.hidden = true;
 				setTimeout(() => this.updateView($('.tab-torrent.active'), true), 100);
 			}
 		},
@@ -422,7 +425,7 @@
 						continue;
 					}
 					let selected = false;
-					if (file.done || torrent._selections.some(function (el) { return el.from === file._startPiece || el.to === file._endPiece; })) {
+					if (!file.hidden && (file.done || torrent._selections.some(function (el) { return el.from === file._startPiece || el.to === file._endPiece; }))) {
 						selected = true;
 					}
 
@@ -457,9 +460,13 @@
 				if (supported.indexOf(path.extname(file.name).toLowerCase()) === -1) {
 					continue;
 				}
-				if (file.done || torrent._selections.some(function (el) { return el.from === file._startPiece || el.to === file._endPiece; })) {
+				if (!file.hidden && (file.done || torrent._selections.some(function (el) { return el.from === file._startPiece || el.to === file._endPiece; }))) {
 					totalSize = totalSize + file.length;
 					totalDownloaded = totalDownloaded + file.downloaded;
+					try {
+						let thisElement = document.evaluate("//a[text()='" + file.name + "']", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.parentNode;
+						$(thisElement).attr('title', Common.fileSize(file.downloaded) + ' / ' + Common.fileSize(file.length)).tooltip('fixTitle');
+					} catch(err) {}
 				}
 			}
 
